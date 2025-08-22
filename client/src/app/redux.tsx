@@ -26,7 +26,7 @@ import createWebStorage from "redux-persist/lib/storage/createWebStorage";
 /* REDUX PERSISTENCE */
 const createNoopStorage = () => {
   return {
-    getItem(_key: any) {
+    getItem(_key: string) {
       return Promise.resolve(null);
     },
     setItem(_key: any, value: any) {
@@ -80,16 +80,32 @@ export default function StoreProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const storeRef = useRef<AppStore>();
+  // const storeRef = useRef<AppStore>();
+  // if (!storeRef.current) {
+  //   storeRef.current = makeStore();
+  //   setupListeners(storeRef.current.dispatch);
+  // }
+  // const persistor = persistStore(storeRef.current);
+  // Fix 1: Properly type the useRef with undefined initial value
+  const storeRef = useRef<AppStore | undefined>(undefined);
+  const persistorRef = useRef<ReturnType<typeof persistStore> | undefined>(undefined);
+
+  // Fix 2: Initialize both store and persistor only once
   if (!storeRef.current) {
     storeRef.current = makeStore();
     setupListeners(storeRef.current.dispatch);
+    persistorRef.current = persistStore(storeRef.current);
   }
-  const persistor = persistStore(storeRef.current);
+
+  // Fix 3: Use the ref values with proper null checks
+  if (!storeRef.current || !persistorRef.current) {
+    return null; // or a loading component
+  }
 
   return (
     <Provider store={storeRef.current}>
-      <PersistGate loading={null} persistor={persistor}>
+      {/* <PersistGate loading={null} persistor={persistor}> */}
+      <PersistGate loading={null} persistor={persistorRef.current}>
         {children}
       </PersistGate>
     </Provider>
